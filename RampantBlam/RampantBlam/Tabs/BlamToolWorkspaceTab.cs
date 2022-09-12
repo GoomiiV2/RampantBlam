@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using System.Reflection;
+using BlamTool.Systems;
 using BlamTool.Windows;
 using ImGuiNET;
 using ImTool;
@@ -10,33 +11,39 @@ namespace BlamTool;
 public class TagExplorerTab : BaseTab
 {
     public TagExplorerTab(BlamTool tool) : base(tool) => this.Tool = Tool;
-    private About AboutWindow = new About();
+    private About       AboutWindow       = new About();
+    private TagExplorer TagExplorerWindow = new();
 
     public override    string         WorkspaceName { get; } = "TagExplorer";
-    protected override WorkspaceFlags Flags         { get; } = WorkspaceFlags.None;
+    protected override WorkspaceFlags Flags         { get; } = WorkspaceFlags.SingleWorkspace;
     public override    string         Name          { get; } = "Tag Explorer";
         
     // if you want a custom default docking layout, this is the place to do that
     protected override void CreateDockSpace(Vector2 size)
     {
         // split
-        ImGui.DockBuilderSplitNode(DockSpaceID, ImGuiDir.Left, 0.30f, out uint leftId, out uint centerId);
-        ImGui.DockBuilderSplitNode(centerId, ImGuiDir.Down, 0.20f, out uint centerBottomId, out uint centerTopId);
-        ImGui.DockBuilderSplitNode(centerTopId, ImGuiDir.Right, 0.40f, out uint centerRightId, out uint centerLeftId);
-        ImGui.DockBuilderSplitNode(centerRightId, ImGuiDir.Down, 0.40f, out uint centerRightBottomId, out uint centerRightTopId);
+        ImGui.DockBuilderSplitNode(DockSpaceID, ImGuiDir.Left, 0.2f, out var leftId, out var rightId);
+        ImGui.DockBuilderSplitNode(rightId, ImGuiDir.Down, 0.2f, out var rightBottomId, out var rightTopId);
 
-        // assign
-        //ImGui.DockBuilderDockWindow("Hex View", topLeftId);
-        ImGui.DockBuilderDockWindow("Test Log Window", centerBottomId);
-        ImGui.DockBuilderDockWindow("Dear ImGui Demo", leftId);
-        ImGui.DockBuilderDockWindow("Dear ImGui Metrics/Debugger", centerRightTopId);
-        ImGui.DockBuilderDockWindow("Extensions test :>", centerRightBottomId);
+        ImGui.DockBuilderDockWindow("Packet DB", leftId);
+        ImGui.DockBuilderDockWindow("Logs", rightBottomId);
+        ImGui.DockBuilderDockWindow("Workspace", rightTopId);
             
     }
     
     public override void Load()
     {
-
+        OpenWindow(TagExplorerWindow);
+        
+        if (!string.IsNullOrEmpty(BlamToolConfig.Inst.ReachEKPath)) {
+            Blam.Start();
+            
+            var testTagEditor = new TagEditor(@$"{BlamToolConfig.Inst.ReachEKPath}\tags\levels\solo\m20\bitmaps\concrete\m20_concrete_pitted_diff.bitmap");
+            OpenWindow(testTagEditor);
+            
+            var testTagEditor2 = new TagEditor(@$"{BlamToolConfig.Inst.ReachEKPath}\tags\multiplayer\megalo\global.megalo_string_id_table");
+            OpenWindow(testTagEditor2);
+        }
     }
 
     // unload gets called when the tab is removed from the window
@@ -51,9 +58,8 @@ public class TagExplorerTab : BaseTab
     protected override void SubmitContent()
     {
         base.SubmitContent();
-        
-        ImGui.ShowDemoWindow();
-        ImGui.ShowMetricsWindow();
+
+        BlamTool.Log.DrawWindow();
     }
 
     // the "workspace" is the central node / free space in a tab
@@ -64,22 +70,40 @@ public class TagExplorerTab : BaseTab
     // if you're using this mode
     //
     // you can sumbit controls directly to the workspace from this override as the workspace is contained in a imgui window
-    protected override void SubmitWorkspaceContent()
+    protected override unsafe void SubmitWorkspaceContent()
     {
+        var wClass = new ImGuiWindowClass();
+        wClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags.NoWindowMenuButton | ImGuiDockNodeFlags.NoCloseButton | ImGuiDockNodeFlags.NoDockingOverMe;
+        ImGuiNative.igSetNextWindowClass(&wClass);
+        ImGui.Begin("Workspace");
             
+        ImGui.End();
     }
-
-    // anything you submit here appears on the settings pane
-    // the "active" bool tells you if this tab is currently active
+    
     protected override void SubmitSettings(bool active)
     {
-        ImGui.Text($"Submitted from WorkspaceTab.SubmitSettings({active})");
-
         if (ImGui.Button("About")) {
             ToggleWindow(AboutWindow);
         }
-    }
         
+        Settings_EditingKitPath();
+
+        if (ImGui.Button("Save")) {
+            BlamToolConfig.Inst.Save();
+        }
+    }
+
+    private static void Settings_EditingKitPath()
+    {
+        ImGui.Text("Halo Reach EK Path:");
+        var reachEKPath = BlamToolConfig.Inst.ReachEKPath ?? "";
+        ImGui.InputText("###", ref reachEKPath, 500);
+        BlamToolConfig.Inst.ReachEKPath = reachEKPath;
+        ImGui.SameLine();
+        if (ImGui.Button("...")) {
+        }
+    }
+
     // submit your file menu etc from here :)
     protected override void SubmitMainMenu()
     {

@@ -4,10 +4,11 @@ namespace BlamTool.Windows;
 
 public class BaseWindow
 {
-    public BaseTab          Tab;
-    public string           Name   = string.Empty;
-    public ImGuiWindowFlags Flags  = ImGuiWindowFlags.None;
-    public bool             IsOpen = true;
+    public    BaseTab          Tab;
+    public    string           Name           = string.Empty;
+    public    ImGuiWindowFlags Flags          = ImGuiWindowFlags.None;
+    protected bool             HasCloseButton = true;
+    public    bool             IsOpen         = true;
 
     public virtual void OnOpen(BaseTab tab)
     {
@@ -22,7 +23,8 @@ public class BaseWindow
 
     public virtual void DrawWindow()
     {
-        if (ImGui.Begin(Name, ref IsOpen)) {
+        var shouldShow = HasCloseButton ? ImGui.Begin(Name, ref IsOpen) : ImGui.Begin(Name);
+        if (shouldShow) {
             Draw();
             ImGui.End();
         }
