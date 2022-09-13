@@ -1,11 +1,7 @@
-﻿using System.IO.IsolatedStorage;
-using System.Numerics;
+﻿using System.Numerics;
 using Bungie.Tags;
 using ImGuiNET;
 using ImTool;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using Veldrid.ImageSharp;
 
 namespace BlamTool.Windows;
 
@@ -15,9 +11,6 @@ public class TagEditor : BaseWindow
     public  Bungie.Tags.TagFile TagFile;
     private IntPtr              TagBaseAddr = IntPtr.Zero;
     private HexView             HexTagView = new ();
-    
-    private ImageSharpTexture Image;
-    private IntPtr            TexBinding;
 
     public TagEditor(string path)
     {
@@ -34,8 +27,6 @@ public class TagEditor : BaseWindow
     {
         ImGui.BeginChild("LeftPanel", new Vector2(500, -1));
         {
-            ImGui.Image(TexBinding, new Vector2(383, 421));
-
             ImGui.Text($"{TagFile.FieldPath}");
             ImGui.Text($"{TagFile.Size}");
 
